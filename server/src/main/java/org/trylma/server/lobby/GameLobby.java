@@ -51,7 +51,10 @@ public class GameLobby {
 
     private void startGame() {
         game = GameFactory.createGame(gameConfig, players, lobbyMediator);
-        // Further initialization if needed
+        for (ClientHandler clientHandler : clientHandlers) {
+            clientHandler.setGame(game);
+            clientHandler.notifyGameStart();
+        }
     }
 
     public GameConfig getGameConfig() {

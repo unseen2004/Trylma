@@ -19,6 +19,7 @@ public class ClientHandler implements Runnable {
     private Player player;
     private Game game;
     private boolean isHost;
+    private static int playerCount = 0;
 
     public ClientHandler(Socket clientSocket, LobbyMediator lobbyMediator, boolean isHost) {
         this.clientSocket = clientSocket;
@@ -56,11 +57,8 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleClientConnection() throws IOException, ClassNotFoundException {
-        Object playerName = in.readObject();
-        if (!(playerName instanceof String)) {
-            throw new IllegalArgumentException("Expected player name as String");
-        }
-        this.player = new Player((String) playerName);
+        playerCount++;
+        this.player = new Player("Player " + playerCount);
 
         Object gameConfig = in.readObject();
         if (!(gameConfig instanceof GameConfig)) {
