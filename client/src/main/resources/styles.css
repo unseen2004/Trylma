@@ -1,0 +1,13 @@
+/* Add your CSS styles here */
+.root {
+    -fx-font-family: "Arial";
+}
+
+.label {
+    -fx-font-size: 14px;
+}
+
+.button {
+    -fx-font-size: 14px;
+    -fx-padding: 8px 15px;
+}
