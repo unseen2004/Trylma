@@ -10,7 +10,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
 import javafx.stage.Stage;
 import org.trylma.client.network.ClientNetworkManager;
 
@@ -27,9 +26,6 @@ public class HostSetupController {
 
     @FXML
     private Button startGameButton;
-
-    @FXML
-    private Label connectedPlayersLabel;
 
     private ClientNetworkManager networkManager;
 
@@ -51,42 +47,28 @@ public class HostSetupController {
 
         if (selectedGameType != null && selectedPlayerCount != null) {
             GameConfig gameConfig = new GameConfig(selectedGameType, selectedPlayerCount);
-            // Send the game configuration to the server
             CompletableFuture<Boolean> setupResult = networkManager.sendGameSetup(gameConfig);
 
             setupResult.thenAccept(success -> {
                 if (success) {
                     Platform.runLater(() -> {
                         try {
-                            // Transition to the GameView
-                            loadGameView();
+                            loadWaitingView();
                         } catch (IOException e) {
                             e.printStackTrace();
-                            // Handle error
                         }
-                    });
-                } else {
-                    // Handle setup failure
-                    Platform.runLater(() -> {
-                        // Show an error message to the user
                     });
                 }
             });
         }
     }
 
-    private void loadGameView() throws IOException {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/GameView.fxml"));
-        Parent gameView = loader.load();
-
-        GameController gameController = loader.getController();
-        // Pass the network manager to the GameController
-        gameController.setNetworkManager(networkManager);
-
-        // Get the current stage and set the new scene
+    private void loadWaitingView() throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/WaitingView.fxml"));
+        Parent waitingView = loader.load();
+        WaitingController waitingController = loader.getController();
+        waitingController.setNetworkManager(networkManager);
         Stage stage = (Stage) startGameButton.getScene().getWindow();
-        stage.setScene(new Scene(gameView));
+        stage.setScene(new Scene(waitingView));
     }
-
-    // Add methods for updating the list of connected players, etc.
 }

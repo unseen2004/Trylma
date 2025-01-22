@@ -25,7 +25,7 @@ public class GameFactory {
 
         // Create ClientHandlers for each player (assuming you have a way to associate players with their network connections)
         List<ClientHandler> clientHandlers = players.stream()
-                .map(player -> new ClientHandler(new Socket(), lobbyMediator)) // Replace with actual Socket creation
+                .map(player -> new ClientHandler(new Socket(), lobbyMediator, false)) // Replace with actual Socket creation and host determination
                 .collect(Collectors.toList());
 
         return new Game(board, players, strategy, clientHandlers);

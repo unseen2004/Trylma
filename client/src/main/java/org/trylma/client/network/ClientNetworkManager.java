@@ -3,6 +3,7 @@ package org.trylma.client.network;
 import org.trylma.common.model.GameConfig;
 import org.trylma.common.model.Move;
 import org.trylma.client.controller.GameController;
+import org.trylma.client.controller.WaitingController;
 import javafx.application.Platform;
 
 import java.io.IOException;
@@ -19,6 +20,8 @@ public class ClientNetworkManager {
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private GameController gameController;
+    private WaitingController waitingController;
+    private boolean isHost;
 
     public ClientNetworkManager(String serverAddress, int serverPort) throws IOException {
         this.serverAddress = serverAddress;
@@ -31,68 +34,62 @@ public class ClientNetworkManager {
         out = new ObjectOutputStream(socket.getOutputStream());
         in = new ObjectInputStream(socket.getInputStream());
 
+        // Determine if this client is the host
+        isHost = in.readBoolean();
+
         // Start listening for server messages in a separate thread
         new Thread(this::listenToServer).start();
+    }
+
+    public boolean isHost() {
+        return isHost;
     }
 
     public void setGameController(GameController gameController) {
         this.gameController = gameController;
     }
 
+    public void setWaitingController(WaitingController waitingController) {
+        this.waitingController = waitingController;
+    }
+
     public CompletableFuture<Boolean> sendGameSetup(GameConfig config) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                byte[] data = MessageAdapter.serialize(config);
-                out.writeObject(data);
+                out.writeObject(config);
                 out.flush();
-                // Wait for a confirmation or response from the server
-                byte[] responseData = (byte[]) in.readObject();
-                String response = (String) MessageAdapter.deserialize(responseData);
-
-                // Process the response (e.g., check for success or failure)
-                return "OK".equals(response); // Example response handling
-            } catch (IOException | ClassNotFoundException e) {
+                return true;
+            } catch (IOException e) {
                 e.printStackTrace();
                 return false;
             }
         });
     }
 
-
     public void sendMove(Move move) {
         try {
-            byte[] data = MessageAdapter.serialize(move);
-            out.writeObject(data);
+            out.writeObject(move);
             out.flush();
         } catch (IOException e) {
             e.printStackTrace();
-            // Handle error (e.g., server disconnected)
         }
     }
 
     private void listenToServer() {
         try {
             while (!socket.isClosed()) {
-                byte[] receivedData = (byte[]) in.readObject();
-                Object received = MessageAdapter.deserialize(receivedData);
-
+                Object received = in.readObject();
                 if (received instanceof Move) {
-                    // Update the game state with the received move
                     Platform.runLater(() -> gameController.updateBoard((Move) received));
                 } else if (received instanceof String) {
                     String message = (String) received;
-                    // Process other messages from the server
-                    // For example, you might receive messages about game start, turn changes, etc.
-                    // Use Platform.runLater() to update the UI from these messages
+                    if ("Game start".equals(message)) {
+                        Platform.runLater(waitingController::notifyGameStart);
+                    }
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
-            if (!socket.isClosed()) {
-                e.printStackTrace();
-                // Handle error (e.g., server disconnected)
-            }
+            e.printStackTrace();
         }
     }
-
-    // Other methods for sending/receiving data, closing the connection, etc.
 }

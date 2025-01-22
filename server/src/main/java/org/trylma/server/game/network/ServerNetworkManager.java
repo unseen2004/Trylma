@@ -12,6 +12,7 @@ public class ServerNetworkManager {
     private ServerSocket serverSocket;
     private final ExecutorService clientExecutor;
     private final LobbyMediator lobbyMediator;
+    private boolean isFirstClient = true;
 
     public ServerNetworkManager(int port) {
         this.port = port;
@@ -28,7 +29,9 @@ public class ServerNetworkManager {
                 while (!serverSocket.isClosed()) {
                     Socket clientSocket = serverSocket.accept();
                     System.out.println("New client connected: " + clientSocket);
-                    clientExecutor.execute(new ClientHandler(clientSocket, lobbyMediator));
+                    boolean isHost = isFirstClient;
+                    isFirstClient = false;
+                    clientExecutor.execute(new ClientHandler(clientSocket, lobbyMediator, isHost));
                 }
             } catch (IOException e) {
                 System.err.println("Server exception: " + e.getMessage());

@@ -18,10 +18,12 @@ public class ClientHandler implements Runnable {
     private final LobbyMediator lobbyMediator;
     private Player player;
     private Game game;
+    private boolean isHost;
 
-    public ClientHandler(Socket clientSocket, LobbyMediator lobbyMediator) {
+    public ClientHandler(Socket clientSocket, LobbyMediator lobbyMediator, boolean isHost) {
         this.clientSocket = clientSocket;
         this.lobbyMediator = lobbyMediator;
+        this.isHost = isHost;
         try {
             this.out = new ObjectOutputStream(clientSocket.getOutputStream());
             this.in = new ObjectInputStream(clientSocket.getInputStream());
@@ -34,7 +36,8 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
-            // Handle client connection, authentication, game setup, etc.
+            out.writeBoolean(isHost);
+            out.flush();
             handleClientConnection();
             while (!clientSocket.isClosed()) {
                 Object input = in.readObject();
@@ -53,14 +56,12 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleClientConnection() throws IOException, ClassNotFoundException {
-        // Assuming the first object sent is a string for player's name
         Object playerName = in.readObject();
         if (!(playerName instanceof String)) {
             throw new IllegalArgumentException("Expected player name as String");
         }
         this.player = new Player((String) playerName);
 
-        // Then the client sends the game configuration
         Object gameConfig = in.readObject();
         if (!(gameConfig instanceof GameConfig)) {
             throw new IllegalArgumentException("Expected GameConfig object");
@@ -126,6 +127,4 @@ public class ClientHandler implements Runnable {
     public void setGame(Game game) {
         this.game = game;
     }
-
-    // Other methods for communication with the client
 }
